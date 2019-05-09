@@ -1,0 +1,10 @@
+*.pyc
+data/polyvore/*.tar.gz
+data/polyvore/jsons/*
+data/polyvore/images/*
+data/polyvore/dataset/*
+data/amazon/*.json.gz
+data/amazon/*.b
+data/amazon/*.pkl
+data/amazon/dataset/*
+logs/*
