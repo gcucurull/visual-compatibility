@@ -66,11 +66,12 @@ In both cases, K is the maximum number of neighbours used around a node. For Pol
 ## Reference
 Please cite our paper as:
 
-    @article{cucurull2019context,
-      title={Context-Aware Visual Compatibility Prediction},
-      author={Cucurull, Guillem and Taslakian, Perouz and Vazquez, David},
-      journal={arXiv preprint arXiv:1902.03646},
-      year={2019}
+    @InProceedings{Cucurull_2019_CVPR,
+      author = {Cucurull, Guillem and Taslakian, Perouz and Vazquez, David},
+      title = {Context-Aware Visual Compatibility Prediction},
+      booktitle = {The IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+      month = {June},
+      year = {2019}
     }
 
 
