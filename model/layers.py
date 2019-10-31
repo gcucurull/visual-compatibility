@@ -8,7 +8,7 @@ _LAYER_UIDS = {}
 def dot(x, y, sparse=False):
     """Wrapper for tf.matmul (sparse vs dense)."""
     if sparse:
-        res = tf.sparse_tensor_dense_matmul(x, y)
+        res = tf.sparse.sparse_dense_matmul(x, y)
     else:
         res = tf.matmul(x, y)
     return res
@@ -55,17 +55,17 @@ class Layer(object):
         return inputs
 
     def __call__(self, input):
-        with tf.name_scope(self.name):
+        with tf.compat.v1.name_scope(self.name):
             if self.logging and not self.sparse_inputs:
-                tf.summary.histogram(self.name + '/input', input)
+                tf.compat.v1.summary.histogram(self.name + '/input', input)
             outputs = self._call(input)
             if self.logging:
-                tf.summary.histogram(self.name + '/outputs', outputs)
+                tf.compat.v1.summary.histogram(self.name + '/outputs', outputs)
             return outputs
 
     def _log_vars(self):
         for var in self.vars:
-            tf.summary.histogram(self.name + '/vars/' + var, self.vars[var])
+            tf.compat.v1.summary.histogram(self.name + '/vars/' + var, self.vars[var])
 
 
 class Dense(Layer):
@@ -74,7 +74,7 @@ class Dense(Layer):
                  bias=False, batch_norm=False, **kwargs):
         super(Dense, self).__init__(**kwargs)
 
-        with tf.variable_scope(self.name + '_vars'):
+        with tf.compat.v1.variable_scope(self.name + '_vars'):
             self.vars['weights'] = weight_variable_random_uniform(input_dim, output_dim, name="weights")
 
             if bias:
@@ -92,7 +92,7 @@ class Dense(Layer):
 
     def _call(self, input):
         x_n = input
-        x_n = tf.nn.dropout(x_n, 1 - self.dropout)
+        x_n = tf.nn.dropout(x_n, 1 - (1 - self.dropout))
         x_n = tf.matmul(x_n, self.vars['weights'])
 
         if self.bias and not self.batch_norm: # do not use bias if using bn
@@ -101,17 +101,17 @@ class Dense(Layer):
         n_outputs = self.act(x_n)
 
         if self.batch_norm:
-            n_outputs = tf.layers.batch_normalization(n_outputs, training=self.is_train)
+            n_outputs = tf.compat.v1.layers.batch_normalization(n_outputs, training=self.is_train)
 
         return n_outputs
 
     def __call__(self, input):
-        with tf.name_scope(self.name):
+        with tf.compat.v1.name_scope(self.name):
             if self.logging:
-                tf.summary.histogram(self.name + '/input', input)
+                tf.compat.v1.summary.histogram(self.name + '/input', input)
             outputs_n = self._call(input)
             if self.logging:
-                tf.summary.histogram(self.name + '/outputs_n', outputs_n)
+                tf.compat.v1.summary.histogram(self.name + '/outputs_n', outputs_n)
             return outputs_n
 
 
@@ -121,7 +121,7 @@ class GCN(Layer):
                  act=tf.nn.relu, bias=False, batch_norm=False, init='def', **kwargs):
         super(GCN, self).__init__(**kwargs)
         assert init in ['def', 'he']
-        with tf.variable_scope(self.name + '_vars'):
+        with tf.compat.v1.variable_scope(self.name + '_vars'):
             if init == 'def':
                 init_func = weight_variable_random_uniform
             else:
@@ -153,7 +153,7 @@ class GCN(Layer):
             self._log_vars()
 
     def _call(self, input):
-        x_n = tf.nn.dropout(input, 1 - self.dropout)
+        x_n = tf.nn.dropout(input, 1 - (1 - self.dropout))
 
         supports_n = []
 
@@ -165,7 +165,7 @@ class GCN(Layer):
             support = self.support[i]
 
             # then multiply with rating matrices
-            supports_n.append(tf.sparse_tensor_dense_matmul(support, tmp_n))
+            supports_n.append(tf.sparse.sparse_dense_matmul(support, tmp_n))
 
         z_n = tf.add_n(supports_n)
 
@@ -175,17 +175,17 @@ class GCN(Layer):
         n_outputs = self.act(z_n)
 
         if self.batch_norm:
-            n_outputs = tf.layers.batch_normalization(n_outputs, training=self.is_train)
+            n_outputs = tf.compat.v1.layers.batch_normalization(n_outputs, training=self.is_train)
 
         return n_outputs
 
     def __call__(self, input):
-        with tf.name_scope(self.name):
+        with tf.compat.v1.name_scope(self.name):
             if self.logging and not self.sparse_inputs:
-                tf.summary.histogram(self.name + '/input', input)
+                tf.compat.v1.summary.histogram(self.name + '/input', input)
             outputs_n = self._call(input)
             if self.logging:
-                tf.summary.histogram(self.name + '/outputs_n', outputs_n)
+                tf.compat.v1.summary.histogram(self.name + '/outputs_n', outputs_n)
             return outputs_n
 
 
@@ -197,7 +197,7 @@ class MLPDecoder(Layer):
                  dropout=0., act=lambda x: x, n_out=1, use_bias=False, **kwargs):
         super(MLPDecoder, self).__init__(**kwargs)
 
-        with tf.variable_scope(self.name + '_vars'):
+        with tf.compat.v1.variable_scope(self.name + '_vars'):
             self.vars['weights'] = weight_variable_random_uniform(input_dim, n_out, name='weights')
             if use_bias:
                 self.vars['bias'] = bias_variable_zero([n_out], name="bias")
@@ -213,7 +213,7 @@ class MLPDecoder(Layer):
             self._log_vars()
 
     def _call(self, inputs):
-        node_inputs = tf.nn.dropout(inputs, 1 - self.dropout)
+        node_inputs = tf.nn.dropout(inputs, 1 - (1 - self.dropout))
 
         # r corresponds to the selected rows, and c to the selected columns
         row_inputs = tf.gather(node_inputs, self.r_indices)

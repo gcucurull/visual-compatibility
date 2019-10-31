@@ -54,14 +54,14 @@ def test_amazon(args):
 
     num_support = len(train_support)
     placeholders = {
-        'row_indices': tf.placeholder(tf.int32, shape=(None,)),
-        'col_indices': tf.placeholder(tf.int32, shape=(None,)),
-        'dropout': tf.placeholder_with_default(0., shape=()),
-        'weight_decay': tf.placeholder_with_default(0., shape=()),
-        'is_train': tf.placeholder_with_default(True, shape=()),
-        'support': [tf.sparse_placeholder(tf.float32, shape=(None, None)) for sup in range(num_support)],
-        'node_features': tf.placeholder(tf.float32, shape=(None, None)),
-        'labels': tf.placeholder(tf.float32, shape=(None,))   
+        'row_indices': tf.compat.v1.placeholder(tf.int32, shape=(None,)),
+        'col_indices': tf.compat.v1.placeholder(tf.int32, shape=(None,)),
+        'dropout': tf.compat.v1.placeholder_with_default(0., shape=()),
+        'weight_decay': tf.compat.v1.placeholder_with_default(0., shape=()),
+        'is_train': tf.compat.v1.placeholder_with_default(True, shape=()),
+        'support': [tf.compat.v1.sparse_placeholder(tf.float32, shape=(None, None)) for sup in range(num_support)],
+        'node_features': tf.compat.v1.placeholder(tf.float32, shape=(None, None)),
+        'labels': tf.compat.v1.placeholder(tf.float32, shape=(None,))   
     }
 
     model = CompatibilityGAE(placeholders,
@@ -82,9 +82,9 @@ def test_amazon(args):
                                          test_labels, test_r_indices, test_c_indices, 0., is_train=BN_AS_TRAIN)
 
     # Add ops to save and restore all the variables.
-    saver = tf.train.Saver()
+    saver = tf.compat.v1.train.Saver()
 
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
         saver.restore(sess, load_from+'/'+'best_epoch.ckpt')
 
         val_avg_loss, val_acc, conf, pred = sess.run([model.loss, model.accuracy, model.confmat, model.predict()], feed_dict=val_feed_dict)

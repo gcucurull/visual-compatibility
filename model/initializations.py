@@ -3,14 +3,14 @@ import numpy as np
 
 def weight_variable_he_init(input_dim, output_dim, name):
     """MSRA or He init"""
-    return tf.get_variable(name, [input_dim, output_dim],
-                    initializer=tf.contrib.layers.variance_scaling_initializer())
+    return tf.compat.v1.get_variable(name, [input_dim, output_dim],
+                    initializer=tf.compat.v1.keras.initializers.VarianceScaling(scale=2.0))
 
 def weight_variable_truncated_normal(input_dim, output_dim, name=""):
     """Create a weight variable with truncated normal distribution, values
     that are more than 2 stddev away from the mean are redrawn."""
 
-    initial = tf.truncated_normal([input_dim, output_dim], stddev=0.5)
+    initial = tf.random.truncated_normal([input_dim, output_dim], stddev=0.5)
     return tf.Variable(initial, name=name)
 
 
@@ -21,10 +21,10 @@ def weight_variable_random_uniform(input_dim, output_dim=None, name=""):
     http://jmlr.org/proceedings/papers/v9/glorot10a/glorot10a.pdf"""
     if output_dim is not None:
         init_range = np.sqrt(6.0 / (input_dim + output_dim))
-        initial = tf.random_uniform([input_dim, output_dim], minval=-init_range, maxval=init_range, dtype=tf.float32)
+        initial = tf.random.uniform([input_dim, output_dim], minval=-init_range, maxval=init_range, dtype=tf.float32)
     else:
         init_range = np.sqrt(6.0 / input_dim)
-        initial = tf.random_uniform([input_dim], minval=-init_range, maxval=init_range, dtype=tf.float32)
+        initial = tf.random.uniform([input_dim], minval=-init_range, maxval=init_range, dtype=tf.float32)
     return tf.Variable(initial, name=name)
 
 
@@ -36,13 +36,13 @@ def weight_variable_random_uniform_relu(input_dim, output_dim, name=""):
     and are optimized for ReLU activation function."""
 
     init_range = np.sqrt(2.0 / (input_dim + output_dim))
-    initial = tf.random_uniform([input_dim, output_dim], minval=-init_range, maxval=init_range, dtype=tf.float32)
+    initial = tf.random.uniform([input_dim, output_dim], minval=-init_range, maxval=init_range, dtype=tf.float32)
     return tf.Variable(initial, name=name)
 
 
 def bias_variable_truncated_normal(shape, name=""):
     """Create a bias variable with appropriate initialization."""
-    initial = tf.truncated_normal(shape, stddev=0.5)
+    initial = tf.random.truncated_normal(shape, stddev=0.5)
     return tf.Variable(initial, name=name)
 
 
@@ -74,6 +74,6 @@ def orthogonal(shape, scale=1.1, name=None):
 
 def bias_variable_const(shape, val, name=""):
     """Create a bias variable initialized as zero."""
-    value = tf.to_float(val)
+    value = tf.cast(val, dtype=tf.float32)
     initial = tf.fill(shape, value, name=name)
     return tf.Variable(initial, name=name)

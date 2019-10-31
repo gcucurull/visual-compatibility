@@ -9,6 +9,7 @@ import json
 import os
 import shutil
 
+
 from utils import sparse_to_tuple, get_degree_supports, normalize_nonsym_adj
 from model.CompatibilityGAE import CompatibilityGAE
 from utils import construct_feed_dict, write_log, support_dropout
@@ -17,7 +18,8 @@ from dataloaders import DataLoaderPolyvore, DataLoaderFashionGen, DataLoaderAmaz
 # Set random seed
 seed = int(time.time()) # 12342
 np.random.seed(seed)
-tf.set_random_seed(seed)
+tf.compat.v1.set_random_seed(seed)
+tf.compat.v1.disable_eager_execution()
 
 # Settings
 ap = argparse.ArgumentParser()
@@ -148,14 +150,14 @@ for i in range(1, len(train_support)):
 
 num_support = len(train_support)
 placeholders = {
-    'row_indices': tf.placeholder(tf.int32, shape=(None,)),
-    'col_indices': tf.placeholder(tf.int32, shape=(None,)),
-    'dropout': tf.placeholder_with_default(0., shape=()),
-    'weight_decay': tf.placeholder_with_default(0., shape=()),
-    'is_train': tf.placeholder_with_default(True, shape=()),
-    'support': [tf.sparse_placeholder(tf.float32, shape=(None, None)) for sup in range(num_support)],
-    'node_features': tf.placeholder(tf.float32, shape=(None, None)),
-    'labels': tf.placeholder(tf.float32, shape=(None,))   
+    'row_indices': tf.compat.v1.placeholder(tf.int32, shape=(None,)),
+    'col_indices': tf.compat.v1.placeholder(tf.int32, shape=(None,)),
+    'dropout': tf.compat.v1.placeholder_with_default(0., shape=()),
+    'weight_decay': tf.compat.v1.placeholder_with_default(0., shape=()),
+    'is_train': tf.compat.v1.placeholder_with_default(True, shape=()),
+    'support': [tf.compat.v1.sparse_placeholder(tf.float32, shape=(None, None)) for sup in range(num_support)],
+    'node_features': tf.compat.v1.placeholder(tf.float32, shape=(None, None)),
+    'labels': tf.compat.v1.placeholder(tf.float32, shape=(None,))   
 }
 
 model = CompatibilityGAE(placeholders,
@@ -185,14 +187,14 @@ else:
                         test_labels, test_r_indices, test_c_indices, 0., is_train=BN_AS_TRAIN)
 
 # Collect all variables to be logged into summary
-merged_summary = tf.summary.merge_all()
+merged_summary = tf.compat.v1.summary.merge_all()
 
-sess = tf.Session()
-sess.run(tf.global_variables_initializer())
+sess = tf.compat.v1.Session()
+sess.run(tf.compat.v1.global_variables_initializer())
 
 if WRITESUMMARY:
-    train_summary_writer = tf.summary.FileWriter(SUMMARIESDIR + '/train', sess.graph)
-    val_summary_writer = tf.summary.FileWriter(SUMMARIESDIR + '/val')
+    train_summary_writer = tf.compat.v1.summary.FileWriter(SUMMARIESDIR + '/train', sess.graph)
+    val_summary_writer = tf.compat.v1.summary.FileWriter(SUMMARIESDIR + '/val')
 else:
     train_summary_writer = None
     val_summary_writer = None
@@ -245,7 +247,7 @@ for epoch in range(NB_EPOCH):
         best_val_score = val_acc
         best_epoch = epoch
         best_epoch_train_score = train_acc
-        saver = tf.train.Saver()
+        saver = tf.compat.v1.train.Saver()
         save_path = saver.save(sess, "%s/best_epoch.ckpt" % (SUMMARIESDIR))
 
     if train_acc > best_train_score:
@@ -263,7 +265,7 @@ for epoch in range(NB_EPOCH):
         val_summary_writer.flush()
 
 # store model
-saver = tf.train.Saver()
+saver = tf.compat.v1.train.Saver()
 save_path = saver.save(sess, "%s/%s.ckpt" % (SUMMARIESDIR, model.name), global_step=model.global_step)
 
 if VERBOSE:
