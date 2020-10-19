@@ -13,6 +13,9 @@ from get_questions import get_questions
 from get_compatibility import get_compats
 from resample_fitb import resample_fitb
 from resample_compat import resample_compatibility
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--phase', default='train', choices=['train', 'valid', 'test'])
@@ -81,7 +84,7 @@ with open(map_file, 'w') as f:
 # create sparse matrix that will represent the adj matrix
 sp_adj = lil_matrix((idx, idx))
 features_mat = np.zeros((idx, 2048))
-print('Filling the values of the sparse adj matrix')
+logging.info('Filling the values of the sparse adj matrix')
 for rel in relations:
     rel_list = relations[rel]
     from_idx = id2idx[rel]
@@ -93,10 +96,10 @@ for rel in relations:
         sp_adj[from_idx, to_idx] = 1
         sp_adj[to_idx, from_idx] = 1 # because it is symmetric
 
-print('Done!')
+logging.info('Done!')
 
 density = sp_adj.sum() / (sp_adj.shape[0] * sp_adj.shape[1])
-print('Sparse density: {}'.format(density))
+logging.info('Sparse density: {}'.format(density))
 
 # now save the adj matrix
 save_adj_file = save_path + 'adj_{}.npz'.format(args.phase)
@@ -137,7 +140,7 @@ def create_test(resampled=False):
     compat_file = save_path + 'compatibility_{}.json'.format(args.phase)
     if resampled:
         compat_file = compat_file.replace('compatibility', 'compatibility_RESAMPLED')
-    print(compat_file)
+    logging.info(compat_file)
     with open(compat_file, 'w') as f:
         json.dump(outfits, f)
 
