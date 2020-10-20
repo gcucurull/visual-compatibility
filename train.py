@@ -69,7 +69,7 @@ ap.add_argument("-amzd", "--amz_data", type=str, default="Men_bought_together",
 args = vars(ap.parse_args())
 
 logging.info('Settings:')
-logging.info(args, '\n')
+logging.info("args : {}".format(args))
 
 # Define parameters
 DATASET = args['dataset']
