@@ -1,6 +1,7 @@
 
 import argparse
 import time
+import logging
 
 import tensorflow as tf
 import numpy as np
@@ -13,6 +14,8 @@ from utils import sparse_to_tuple, get_degree_supports, normalize_nonsym_adj
 from model.CompatibilityGAE import CompatibilityGAE
 from utils import construct_feed_dict, write_log, support_dropout
 from dataloaders import DataLoaderPolyvore, DataLoaderFashionGen, DataLoaderAmazon
+
+logging.basicConfig(level=logging.INFO)
 
 # Set random seed
 seed = int(time.time()) # 12342
@@ -65,8 +68,8 @@ ap.add_argument("-amzd", "--amz_data", type=str, default="Men_bought_together",
 
 args = vars(ap.parse_args())
 
-print('Settings:')
-print(args, '\n')
+logging.info('Settings:')
+logging.info(args, '\n')
 
 # Define parameters
 DATASET = args['dataset']
@@ -204,7 +207,7 @@ best_val_loss = np.inf
 best_epoch = 0
 wait = 0
 
-print('Training...')
+logging.info('Training...')
 
 for epoch in range(NB_EPOCH):
     t = time.time()
@@ -228,7 +231,7 @@ for epoch in range(NB_EPOCH):
     val_avg_loss, val_acc, conf = sess.run([model.loss, model.accuracy, model.confmat], feed_dict=val_feed_dict)
 
     if VERBOSE:
-        print("[*] Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(train_avg_loss),
+        logging.info("[*] Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(train_avg_loss),
               "train_acc=", "{:.5f}".format(train_acc),
               "val_loss=", "{:.5f}".format(val_avg_loss),
               "val_acc=", "{:.5f}".format(val_acc),
@@ -267,14 +270,14 @@ saver = tf.train.Saver()
 save_path = saver.save(sess, "%s/%s.ckpt" % (SUMMARIESDIR, model.name), global_step=model.global_step)
 
 if VERBOSE:
-    print("\nOptimization Finished!")
-    print('best validation score =', best_val_score, 'at iteration {}, with a train_score of {}'.format(best_epoch, best_epoch_train_score))
+    logging.info("\nOptimization Finished!")
+    logging.info('best validation score =', best_val_score, 'at iteration {}, with a train_score of {}'.format(best_epoch, best_epoch_train_score))
 
-print('\nSETTINGS:\n')
+logging.info('\nSETTINGS:\n')
 for key, val in sorted(vars(ap.parse_args()).items()):
-    print(key, val)
+    logging.info(key, val)
 
-print('global seed = ', seed)
+logging.info('global seed = ', seed)
 
 # For parsing results from file
 results = vars(ap.parse_args()).copy()
@@ -284,7 +287,7 @@ results.update({'best_train_score': float(best_train_score)})
 results.update({'best_epoch': best_epoch})
 results.update({'seed':seed})
 
-print(json.dumps(results))
+logging.info(json.dumps(results))
 
 json_outfile = SUMMARIESDIR + '/' + 'results.json'
 with open(json_outfile, 'w') as outfile:
