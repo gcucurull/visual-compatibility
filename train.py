@@ -231,11 +231,12 @@ for epoch in range(NB_EPOCH):
     val_avg_loss, val_acc, conf = sess.run([model.loss, model.accuracy, model.confmat], feed_dict=val_feed_dict)
 
     if VERBOSE:
-        logging.info("[*] Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(train_avg_loss),
+        tup = ("[*] Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(train_avg_loss),
               "train_acc=", "{:.5f}".format(train_acc),
               "val_loss=", "{:.5f}".format(val_avg_loss),
               "val_acc=", "{:.5f}".format(val_acc),
-              "\t\ttime=", "{:.5f}".format(time.time() - t))
+              "time=", "{:.5f}".format(time.time() - t))
+        logging.info("{}".format(tup))
 
     log_data['train']['loss'].append(float(train_avg_loss))
     log_data['train']['acc'].append(float(train_acc))
