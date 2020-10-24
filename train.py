@@ -272,13 +272,14 @@ save_path = saver.save(sess, "%s/%s.ckpt" % (SUMMARIESDIR, model.name), global_s
 
 if VERBOSE:
     logging.info("\nOptimization Finished!")
-    logging.info('best validation score =', best_val_score, 'at iteration {}, with a train_score of {}'.format(best_epoch, best_epoch_train_score))
+    scores_tup = ('best validation score =', best_val_score, 'at iteration {}, with a train_score of {}'.format(best_epoch, best_epoch_train_score))
+    logging.info("{}".format(scores_tup))
 
 logging.info('\nSETTINGS:\n')
 for key, val in sorted(vars(ap.parse_args()).items()):
-    logging.info(key, val)
+    logging.info("{}, {}".format(key, val))
 
-logging.info('global seed = ', seed)
+logging.info('global seed = {}'.format(seed))
 
 # For parsing results from file
 results = vars(ap.parse_args()).copy()
