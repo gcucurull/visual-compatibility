@@ -9,7 +9,7 @@ if [ ! -f "$file_images" ]; then
 	gdown 'https://drive.google.com/uc?id=0B4Eo9mft9jwoNm5WR3ltVkJWX0k' -O "$file_images"
 fi
 
-if [[ ! -e "$dir/jsons" ]]; then
+if [[ ! -e "$dir/jsons" ]] || [ -z "$(ls -A $dir/jsons)" ]; then
     mkdir -p "$dir/jsons"
 	tar zxfv "$file" --directory "$dir/jsons"
 fi
