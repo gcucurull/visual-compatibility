@@ -18,6 +18,9 @@ from PIL import Image
 import time
 import pickle as pkl
 import json
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--phase', default='train', choices=['train', 'test', 'valid'])
@@ -73,7 +76,7 @@ for outfit in data:
 features = {}
 count = {}
 
-print('iterating through ids')
+logging.info('iterating through ids')
 i = 0
 n_items = len(ids.keys())
 with torch.no_grad(): # it is the same as volatile=True for versions before 0.4
@@ -102,7 +105,7 @@ with torch.no_grad(): # it is the same as volatile=True for versions before 0.4
         count[id] += 1
 
         if i % 1000 == 0 and i > 0:
-            print('{}/{}'.format(i, n_items))
+            logging.info('{}/{}'.format(i, n_items))
         i += 1
 
 feat_dict = {}
