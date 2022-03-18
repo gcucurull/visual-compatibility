@@ -11,7 +11,7 @@ from collections import namedtuple
 from utils import get_degree_supports, sparse_to_tuple, normalize_nonsym_adj
 from utils import construct_feed_dict
 from model.CompatibilityGAE import CompatibilityGAE
-from dataloaders import DataLoaderPolyvore, DataLoaderFashionGen
+from dataloaders import DataLoaderPolyvore, DataLoaderFashionGen, DataLoaderPOG
 
 def test_fitb(args):
     args = namedtuple("Args", args.keys())(*args.values())
@@ -24,10 +24,15 @@ def test_fitb(args):
     with open(log_file) as f:
         log = json.load(f)
 
-    DATASET = config['dataset']
     NUMCLASSES = 2
     BN_AS_TRAIN = False
     ADJ_SELF_CONNECTIONS = True
+
+    # Check args first, then use model config file. Allows to test on dataset different from training
+    if args.dataset != None:
+        DATASET = args.dataset
+    else:
+        DATASET = config['dataset']
 
     def norm_adj(adj_to_norm):
         return normalize_nonsym_adj(adj_to_norm)
@@ -37,6 +42,7 @@ def test_fitb(args):
         dl = DataLoaderFashionGen()
     elif DATASET == 'polyvore':
         dl = DataLoaderPolyvore()
+
     train_features, adj_train, train_labels, train_r_indices, train_c_indices = dl.get_phase('train')
     val_features, adj_val, val_labels, val_r_indices, val_c_indices = dl.get_phase('valid')
     test_features, adj_test, test_labels, test_r_indices, test_c_indices = dl.get_phase('test')
@@ -65,7 +71,7 @@ def test_fitb(args):
         'is_train': tf.placeholder_with_default(True, shape=()),
         'support': [tf.sparse_placeholder(tf.float32, shape=(None, None)) for sup in range(num_support)],
         'node_features': tf.placeholder(tf.float32, shape=(None, None)),
-        'labels': tf.placeholder(tf.float32, shape=(None,))   
+        'labels': tf.placeholder(tf.float32, shape=(None,))
     }
 
     model = CompatibilityGAE(placeholders,
@@ -148,5 +154,6 @@ if __name__ == "__main__":
     parser.add_argument('-subset', '--subset', dest='subset', action='store_true',
                         help='Use only a subset of the nodes that form the outfit (3 of them) and use the others as connections')
     parser.add_argument("-lf", "--load_from", type=str, required=True, default=None, help="Model used.")
+    parser.add_argument("-d", '--dataset', type=str, default=None, help="Dataset to test on.")
     args = parser.parse_args()
     test_fitb(vars(args))

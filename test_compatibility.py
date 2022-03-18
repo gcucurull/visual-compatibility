@@ -32,10 +32,24 @@ def test_compatibility(args):
         log = json.load(f)
 
     # Dataloader
-    DATASET = config['dataset']
+    # Check args first, then use model config file. Allows to test on dataset different from training
+    if args.dataset != None:
+        DATASET = args.dataset
+    else:
+        DATASET = config['dataset']
+        
     if DATASET == 'polyvore':
         # load dataset
         dl = DataLoaderPolyvore()
+        orig_train_features, adj_train, train_labels, train_r_indices, train_c_indices = dl.get_phase('train')
+        full_train_adj = dl.train_adj
+        orig_val_features, adj_val, val_labels, val_r_indices, val_c_indices = dl.get_phase('valid')
+        orig_test_features, adj_test, test_labels, test_r_indices, test_c_indices = dl.get_phase('test')
+        full_test_adj = dl.test_adj
+        dl.setup_test_compatibility(resampled=args.resampled)
+    elif DATASET == 'pog':
+        # load dataset
+        dl = DataLoaderPOG()
         orig_train_features, adj_train, train_labels, train_r_indices, train_c_indices = dl.get_phase('train')
         full_train_adj = dl.train_adj
         orig_val_features, adj_val, val_labels, val_r_indices, val_c_indices = dl.get_phase('valid')
@@ -83,7 +97,7 @@ def test_compatibility(args):
         'is_train': tf.placeholder_with_default(True, shape=()),
         'support': [tf.sparse_placeholder(tf.float32, shape=(None, None)) for sup in range(num_support)],
         'node_features': tf.placeholder(tf.float32, shape=(None, None)),
-        'labels': tf.placeholder(tf.float32, shape=(None,))   
+        'labels': tf.placeholder(tf.float32, shape=(None,))
     }
 
     model = CompatibilityGAE(placeholders,
@@ -109,7 +123,7 @@ def test_compatibility(args):
     def eval():
         # use this as a control value, if the model is ok, the value will be the same as in log
         val_avg_loss, val_acc, conf, pred = sess.run([model.loss, model.accuracy, model.confmat, model.predict()], feed_dict=val_feed_dict)
-        
+
         print("val_loss=", "{:.5f}".format(val_avg_loss),
               "val_acc=", "{:.5f}".format(val_acc))
 
@@ -226,5 +240,6 @@ if __name__ == "__main__":
                         help='Use the resampled test, where the invalid outfits are harder.')
     parser.add_argument("-k", type=int, default=1,
                     help="K used for the variable number of edges case")
+    parser.add_argument("-d", '--dataset', type=str, default=None, help="Dataset to test on.")
     args = parser.parse_args()
     test_compatibility(vars(args))
