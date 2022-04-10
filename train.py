@@ -2,7 +2,8 @@
 import argparse
 import time
 
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_eager_execution()
 import numpy as np
 import scipy.sparse as sp
 import json
