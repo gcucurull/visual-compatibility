@@ -3,7 +3,8 @@ This script loads a trained model and tests it for the FITB task.
 """
 
 import json
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_eager_execution()
 import argparse
 import numpy as np
 from collections import namedtuple
