@@ -16,12 +16,5 @@ The [Polyvore dataset](https://github.com/xthan/polyvore-dataset) can be automat
  
     python train.py -d polyvore
 
-Which will store the log and the weights of the model in `logs/`.
-
-## Evaluation:
-Evaluation for the FITB task is performed with:
-
-    python test_fitb.py -lf PATH_TO_MODEL -k K
-
 ## License
 `MIT`
