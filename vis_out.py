@@ -7,7 +7,12 @@ import tensorflow.compat.v1 as tf
 tf.disable_eager_execution()
 import argparse
 import numpy as np
+from skimage.transform import resize
+from skimage import img_as_ubyte
+from skimage.color import gray2rgb, rgba2rgb
+import skimage.io
 from collections import namedtuple
+import os
 
 from utils import get_degree_supports, sparse_to_tuple, normalize_nonsym_adj
 from utils import construct_feed_dict
@@ -24,6 +29,12 @@ def test_fitb(args):
         config = json.load(f)
     with open(log_file) as f:
         log = json.load(f)
+    
+    with open('data/polyvore/dataset/id2idx_test.json') as f:
+        id2idx_test = json.load(f)
+    
+    with open('data/polyvore/dataset/id2their_test.json') as f:
+        id2their_test = json.load(f)
 
     DATASET = config['dataset']
     NUMCLASSES = 2
@@ -33,11 +44,7 @@ def test_fitb(args):
     def norm_adj(adj_to_norm):
         return normalize_nonsym_adj(adj_to_norm)
 
-    # Dataloader
-    if DATASET == 'fashiongen':
-        dl = DataLoaderFashionGen()
-    elif DATASET == 'polyvore':
-        dl = DataLoaderPolyvore()
+    dl = DataLoaderPolyvore()
     train_features, adj_train, train_labels, train_r_indices, train_c_indices = dl.get_phase('train')
     val_features, adj_val, val_labels, val_r_indices, val_c_indices = dl.get_phase('valid')
     test_features, adj_test, test_labels, test_r_indices, test_c_indices = dl.get_phase('test')
@@ -78,11 +85,6 @@ def test_fitb(args):
                     logging=True,
                     batch_norm=config['batch_norm'])
 
-    # Construct feed dicts for train, val and test phases
-    train_feed_dict = construct_feed_dict(placeholders, train_features, train_support,
-                    train_labels, train_r_indices, train_c_indices, config['dropout'])
-    val_feed_dict = construct_feed_dict(placeholders, val_features, val_support,
-                        val_labels, val_r_indices, val_c_indices, 0., is_train=BN_AS_TRAIN)
     test_feed_dict = construct_feed_dict(placeholders, test_features, test_support,
                         test_labels, test_r_indices, test_c_indices, 0., is_train=BN_AS_TRAIN)
     q_feed_dict = construct_feed_dict(placeholders, test_features, q_support,
@@ -92,21 +94,31 @@ def test_fitb(args):
     saver = tf.train.Saver()
     sigmoid = lambda x: 1/(1+np.exp(-x))
 
+    def get_image_id(id):
+        K_1 = None
+        for k,v in id2idx_test.items():
+            if v == id:
+                K_1 = k
+                break
+
+        return id2their_test[K_1]
+    
+    def save_image(id):
+        outfit_id, index = id.split('_') # outfitID_index
+        images_path = 'polyvore_images/images/'
+        image_path = images_path + outfit_id + '/' + '{}.jpg'.format(index)
+        assert os.path.exists(image_path)
+        im = skimage.io.imread(image_path)
+        if len(im.shape) == 2:
+            im = gray2rgb(im)
+        if im.shape[2] == 4:
+            im = rgba2rgb(im)
+        im = resize(im, (256, 256))
+        skimage.io.imsave(f"{id}.png", im)
+
+
     with tf.Session() as sess:
         saver.restore(sess, load_from+'/'+'best_epoch.ckpt')
-
-        val_avg_loss, val_acc, conf, pred = sess.run([model.loss, model.accuracy, model.confmat, model.predict()], feed_dict=val_feed_dict)
-
-        print("val_loss=", "{:.5f}".format(val_avg_loss),
-              "val_acc=", "{:.5f}".format(val_acc))
-
-        test_avg_loss, test_acc, conf = sess.run([model.loss, model.accuracy, model.confmat], feed_dict=test_feed_dict)
-
-        print("test_loss=", "{:.5f}".format(test_avg_loss),
-              "test_acc=", "{:.5f}".format(test_acc))
-
-        num_processed = 0
-        correct = 0
 
         kwargs = {'K': args.k, 'subset': args.subset,
                 'resampled': args.resampled, 'expand_outfit':args.expand_outfit}
@@ -129,13 +141,18 @@ def test_fitb(args):
             gt = labels.reshape((-1, 4)).mean(axis=0)
             predicted = outs.argmax()
             gt = gt.argmax()
-            num_processed += 1
-            correct += int(predicted == gt)
 
-            print("[{}] Acc: {}".format(num_processed, correct/num_processed))
+            for v in np.unique(out_ids):
+                id = get_image_id(v)
+                save_image(id)
+            
+            for v in  np.unique(choices_ids):
+                id = get_image_id(v)
+                save_image(id)
+            
+            print(get_image_id(choices_ids[gt]))
 
-    print('Best val score saved in log: {}'.format(config['best_val_score']))
-    print('Last val score saved in log: {}'.format(log['val']['acc'][-1]))
+            break
 
 if __name__ == "__main__":
     # TODO: remove unnecessary arguments

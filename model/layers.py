@@ -1,5 +1,6 @@
 from .initializations import *
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_eager_execution()
 
 # global unique layer ID dictionary for layer name assignment
 _LAYER_UIDS = {}

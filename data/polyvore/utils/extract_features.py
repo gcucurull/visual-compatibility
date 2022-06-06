@@ -18,12 +18,17 @@ from PIL import Image
 import time
 import pickle as pkl
 import json
+from sentence_transformers import SentenceTransformer
+import numpy as np
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--phase', default='train', choices=['train', 'test', 'valid'])
 args = parser.parse_args()
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+
+sbert_model = SentenceTransformer('bert-base-nli-mean-tokens')
 
 # load net to extract features
 model = models.resnet50(pretrained=True)
@@ -48,6 +53,9 @@ def process_image(im):
     out = model(im)
     return out.squeeze()
 
+def process_text(txt):
+    return sbert_model.encode([txt])[0]
+
 dataset_path = '..'
 images_path = dataset_path + '/images/'
 json_file = os.path.join(dataset_path, 'jsons/{}_no_dup.json'.format(args.phase))
@@ -67,7 +75,7 @@ for outfit in data:
         # get id from the image url
         _, id = item['image'].split('id=')
         their_id = '{}_{}'.format(outfit['set_id'], item['index'])
-        ids[id] = their_id
+        ids[id] = (their_id, item['name'])
 
 # initialize empty feature matrix that will be filled
 features = {}
@@ -78,28 +86,36 @@ i = 0
 n_items = len(ids.keys())
 with torch.no_grad(): # it is the same as volatile=True for versions before 0.4
     for id in ids:
-        outfit_id, index = ids[id].split('_') # outfitID_index
+        
+        try:
+            outfit_id, index = ids[id][0].split('_') # outfitID_index
 
-        image_path = images_path + outfit_id + '/' + '{}.jpg'.format(index)
-        assert os.path.exists(image_path)
+            image_path = images_path + outfit_id + '/' + '{}.jpg'.format(index)
+            assert os.path.exists(image_path)
 
-        im = skimage.io.imread(image_path)
-        if len(im.shape) == 2:
-            im = gray2rgb(im)
-        if im.shape[2] == 4:
-            im = rgba2rgb(im)
+            im = skimage.io.imread(image_path)
+            if len(im.shape) == 2:
+                im = gray2rgb(im)
+            if im.shape[2] == 4:
+                im = rgba2rgb(im)
 
-        im = resize(im, (256, 256))
-        im = img_as_ubyte(im)
+            im = resize(im, (256, 256))
+            im = img_as_ubyte(im)
 
-        feats = process_image(im).cpu().numpy()
+            feats = process_image(im).cpu().numpy()
 
-        if id not in features:
-            features[id] = feats
-            count[id] = 0
-        else:
-            features[id] += feats
-        count[id] += 1
+            feat1 = process_text(ids[id][1])
+
+            feats = np.hstack([feats, feat1])
+
+            if id not in features:
+                features[id] = feats
+                count[id] = 0
+            else:
+                features[id] += feats
+            count[id] += 1
+
+        except : pass
 
         if i % 1000 == 0 and i > 0:
             print('{}/{}'.format(i, n_items))
