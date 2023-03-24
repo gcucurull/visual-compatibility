@@ -1,5 +1,5 @@
 gdown==3.7.4
-tensorflow-gpu==1.10.0
+tensorflow-gpu==2.12.0
 torch
 torchvision
 scikit-image==0.14.2
